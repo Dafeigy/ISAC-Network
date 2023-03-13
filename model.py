@@ -7,6 +7,9 @@ import torch.nn.functional as F
 
 
 class Net3d(nn.Module):
+    '''
+    Network structure in paper: Multi-sensor System for Driver’s Hand-Gesture Recognition.
+    '''
     def __init__(self) -> None:
         super(Net3d, self).__init__()
         self.stage1 = nn.Sequential(
@@ -28,7 +31,32 @@ class Net3d(nn.Module):
         return F.softmax(x, dim=0)
     
 
-        
+
+class MTNet(nn.Module):
+    '''
+     Modality Translation Network in DensePose From WiFi.
+     
+     `Input`: [150 x 3 x 3]
+     `Output`: [3 x 720 x 1280]
+    '''
+    def __init__(self) -> None:
+        super(MTNet, self).__init__()
+        self.f_fusion = nn.Flatten()
+        self.FT1 = self.build_head_encoder()
+        self.FT2 = self.build_head_encoder()
+
+    def build_head_encoder(self,hidden_dim=1024, output_dim=512):
+        '''
+        hidden_dim and output_dim are hyper params default as classical num of 1024 and 512.
+        '''
+        encoder = nn.Sequential(
+            nn.Linear(1350,hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim,output_dim),
+            nn.ReLU()
+        )
+        return encoder
+
 
 if __name__ == '__main__':
     # Test image in/output
