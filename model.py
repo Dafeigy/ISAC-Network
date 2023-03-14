@@ -9,6 +9,15 @@ import torch.nn.functional as F
 class Net3d(nn.Module):
     '''
     Network structure in paper: Multi-sensor System for Driver’s Hand-Gesture Recognition.
+    ## To use:
+    ```
+    # Test image in/output
+    # input buffer size: [3,60,32,32]
+    model = Net3d()
+    input_img = torch.rand(3,60,32,32)
+    out = model(input_img)
+    class_index = torch.argmax(out).data.item()
+    ```
     '''
     def __init__(self) -> None:
         super(Net3d, self).__init__()
@@ -25,7 +34,6 @@ class Net3d(nn.Module):
 
     def forward(self, x):
         x = self.stage1(x)
-        print(x.shape)
         x = x.view(-1)
         x = self.stage2(x)
         return F.softmax(x, dim=0)
@@ -35,6 +43,17 @@ class mmWave(nn.Module):
     '''
     RDI input: [4 x 32 x 32]
     RAI input: [1 x 32 x 32]
+
+    To use:
+    ```
+    model = mmWave()
+    input1 = torch.rand(4,32,32).unsqueeze(0)   # RDI Data
+    input2 = torch.rand(1,32,32).unsqueeze(0)   # RAI Data
+    output= model(input1,input2)
+    class_index = torch.argmax(output).data.item()
+    print(output)
+    print(class_index)
+    ```
     '''
     def __init__(self) -> None:
         super(mmWave, self).__init__()
@@ -92,15 +111,29 @@ class MTNet(nn.Module):
     '''
     def __init__(self) -> None:
         super(MTNet, self).__init__()
-        self.f_fusion = nn.Flatten()
         self.FT1 = self.build_head_encoder()
         self.FT2 = self.build_head_encoder()
+        self.fusion_block = self.build_fusion_blcok()
+
+    def build_fusion_block(self):
+        fusion_block = nn.Sequential(
+            nn.Linear(1024,576),
+            nn.ReLU()
+        )
+        return fusion_block
+    
+    def build_unet(self):
+        unet = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2),
+            nn.Conv2d(in_channels=3, out_channels=3, kernel_size=3, stride=2),
+        )
 
     def build_head_encoder(self,hidden_dim=1024, output_dim=512):
         '''
         hidden_dim and output_dim are hyper params default as classical num of 1024 and 512.
         '''
         encoder = nn.Sequential(
+            nn.Flatten(),
             nn.Linear(1350,hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim,output_dim),
@@ -118,6 +151,7 @@ if __name__ == '__main__':
     # class_index = torch.argmax(out).data.item()
 
     model = mmWave()
+    print(model)
     input1 = torch.rand(4,32,32).unsqueeze(0)
     input2 = torch.rand(1,32,32).unsqueeze(0)
     output= model(input1,input2)
